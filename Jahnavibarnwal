@@ -1,0 +1,166 @@
+//Sql query
+USE master;
+CREATE TABLE inventory (
+    id INT IDENTITY PRIMARY KEY,
+    name NVARCHAR(100),
+    company NVARCHAR(100),
+    price DECIMAL(10, 2)
+);
+//code
+using System;
+using System.Data.SqlClient;
+
+struct ElectronicItem
+{
+    public string Name;
+    public string Company;
+    public double Price;
+}
+
+class Program
+{
+    // Replace this with your actual connection string
+    private static string connectionString = @"Server=(localdb)\MSSQLLocalDB;Database=master;Integrated Security=True";
+
+    static void Main()
+    {
+        int choice;
+
+        do
+        {
+            Console.WriteLine("\n--- Electronics Management System ---");
+            Console.WriteLine("1. Add Item");
+            Console.WriteLine("2. Display Items");
+            Console.WriteLine("3. Search Item");
+            Console.WriteLine("4. Delete Item");
+            Console.WriteLine("5. Exit");
+            Console.Write("Enter your choice: ");
+            choice = Convert.ToInt32(Console.ReadLine());
+
+            switch (choice)
+            {
+                case 1:
+                    AddItem();
+                    break;
+                case 2:
+                    DisplayItems();
+                    break;
+                case 3:
+                    SearchItem();
+                    break;
+                case 4:
+                    DeleteItem();
+                    break;
+                case 5:
+                    Console.WriteLine("Exiting the system. Goodbye!");
+                    break;
+                default:
+                    Console.WriteLine("Invalid choice. Please try again.");
+                    break;
+            }
+        } while (choice != 5);
+    }
+
+    static void AddItem()
+    {
+        Console.Write("Enter Item Name: ");
+        string name = Console.ReadLine();
+        Console.Write("Enter Company: ");
+        string company = Console.ReadLine();
+        Console.Write("Enter Price: ");
+        double price = Convert.ToDouble(Console.ReadLine());
+
+        using (SqlConnection connection = new SqlConnection(connectionString))
+        {
+            connection.Open();
+            string query = "INSERT INTO inventory (name, company, price) VALUES (@name, @company, @price)";
+            using (SqlCommand command = new SqlCommand(query, connection))
+            {
+                command.Parameters.AddWithValue("@name", name);
+                command.Parameters.AddWithValue("@company", company);
+                command.Parameters.AddWithValue("@price", price);
+
+                int rowsAffected = command.ExecuteNonQuery();
+                Console.WriteLine(rowsAffected > 0 ? "Item added successfully!" : "Failed to add item.");
+            }
+        }
+    }
+
+    static void DisplayItems()
+    {
+        using (SqlConnection connection = new SqlConnection(connectionString))
+        {
+            connection.Open();
+            string query = "SELECT * FROM inventory";
+            using (SqlCommand command = new SqlCommand(query, connection))
+            {
+                using (SqlDataReader reader = command.ExecuteReader())
+                {
+                    if (!reader.HasRows)
+                    {
+                        Console.WriteLine("No items in the inventory.");
+                        return;
+                    }
+
+                    Console.WriteLine("\nInventory List:");
+                    while (reader.Read())
+                    {
+                        string name = reader["name"].ToString();
+                        string company = reader["company"].ToString();
+                        double price = Convert.ToDouble(reader["price"]);
+                        Console.WriteLine($"Name: {name}, Company: {company}, Price: ${price}");
+                    }
+                }
+            }
+        }
+    }
+
+    static void SearchItem()
+    {
+        Console.Write("Enter Item name to search: ");
+        string searchName = Console.ReadLine();
+
+        using (SqlConnection connection = new SqlConnection(connectionString))
+        {
+            connection.Open();
+            string query = "SELECT * FROM inventory WHERE name = @name";
+            using (SqlCommand command = new SqlCommand(query, connection))
+            {
+                command.Parameters.AddWithValue("@name", searchName);
+                using (SqlDataReader reader = command.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        string name = reader["name"].ToString();
+                        string company = reader["company"].ToString();
+                        double price = Convert.ToDouble(reader["price"]);
+                        Console.WriteLine($"Item Found: Name: {name}, Company: {company}, Price: ${price}");
+                    }
+                    else
+                    {
+                        Console.WriteLine("Item not found.");
+                    }
+                }
+            }
+        }
+    }
+
+    static void DeleteItem()
+    {
+        Console.Write("Enter Item Name to delete: ");
+        string deleteName = Console.ReadLine();
+
+        using (SqlConnection connection = new SqlConnection(connectionString))
+        {
+            connection.Open();
+            string query = "DELETE FROM inventory WHERE name = @name";
+            using (SqlCommand command = new SqlCommand(query, connection))
+            {
+                command.Parameters.AddWithValue("@name", deleteName);
+
+                int rowsAffected = command.ExecuteNonQuery();
+                Console.WriteLine(rowsAffected > 0 ? "Item deleted successfully!" : "Item not found.");
+            }
+        }
+    }
+}
